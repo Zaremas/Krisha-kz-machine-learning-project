@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
+import time
 
 index = {
     "Title": 0,
@@ -30,10 +31,7 @@ index = {
     "Возможен обмен": 24
 }
 
-def get_links(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-
+def get_links(soup):
     links = []
     for a in soup.find_all('a', {"class":"a-card__title"}):
         links.append('https://krisha.kz' + a['href'])
@@ -55,23 +53,46 @@ def parse_page(url):
         attr = parameter.find('dt').text.strip()
         if attr in index:
             data[index[attr]] = parameter.find('dd').text
+    print('finished a row')
     return data
 
+
+
 url = 'https://krisha.kz/prodazha/kvartiry/almaty/?page=1'
-links = get_links(url)
 
-rows = []
-for link in links:
-    row = parse_page(link)
-    rows.append(row)
+limit = 5
+page_counter=1
 
-columns = [
-    "Title", "Price", "Location", "Rooms", "Bail", "TypeOfBuilding", "ResidentialComplex",
-    "YearBuilt", "Floor", "Area", "PreviouslyDorm", "Conditions", "Phone",
-    "Internet", "Bathroom", "Balcony", "BalconyIsGlazed", "Door", "Parking",
-    "Furnished", "Flooring", "CeilingHeight", "Security", "Miscellaneous","ExchangePossible"
-]
-df = pd.DataFrame(rows, columns=columns)
+while True:
+    response = requests.get(url)
+    print(response.status_code)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    links = get_links(soup)
 
+    rows = []
+    for link in links:
+        row = parse_page(link)
+        rows.append(row)
+
+    columns = [
+        "Title", "Price", "Location", "Rooms", "Bail", "TypeOfBuilding", "ResidentialComplex",
+        "YearBuilt", "Floor", "Area", "PreviouslyDorm", "Conditions", "Phone",
+        "Internet", "Bathroom", "Balcony", "BalconyIsGlazed", "Door", "Parking",
+        "Furnished", "Flooring", "CeilingHeight", "Security", "Miscellaneous","ExchangePossible"
+    ]
+    df = pd.DataFrame(rows, columns=columns)
+    
+    next_page_url = soup.find("a", {"class": "paginator__btn--next"})
+
+    if next_page_url:
+        URL = "https://krisha.kz"+next_page_url["href"]
+    else:
+        break
+    
+    if page_counter == limit:
+        break
+    print("page done:", page_counter)
+    page_counter+=1
+    time.sleep(2)
 
 df.to_csv("krisha.csv")
