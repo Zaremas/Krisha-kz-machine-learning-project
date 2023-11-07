@@ -39,6 +39,7 @@ def get_links(soup):
     return links
 
 def parse_page(url):
+    time.sleep(1)
     page = requests.get(url)
     html = page.content
     data = [None]*25
@@ -93,6 +94,6 @@ while True:
         break
     print("page done:", page_counter)
     page_counter+=1
-    time.sleep(2)
+    time.sleep(1)
 
 df.to_csv("krisha.csv")
